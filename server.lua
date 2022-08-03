@@ -23,7 +23,6 @@ function getBanData()
     ResultJson = {}
     PerformHttpRequest(apiURL..'getall/'..serverHash, function(errorCode, resultData, resultHeaders)
         print("[FS-NUSANTARA] Loading ban data...")
-        print(resultData)
         ResultJson = json.decode(resultData)
         for i=1, #ResultJson["data"], 1 do
             table.insert(ListBan, {
