@@ -1,5 +1,8 @@
 local serverHash = "nDmGMyrlxK" --Key untuk akses API
 local apiURL = "https://a11-4316-03.herokuapp.com/"
+local version = "100"
+local discordWebHook = ""
+
 
 AddEventHandler('onResourceStart', function(resourceName)
     print("[FS-NUSANTARA] Test connect to API...")
@@ -16,6 +19,16 @@ function checkAPI()
             print("[FS-NUSANTARA] Error connecting to API")
         end
     end, "GET", json.encode(), {["Content-Type"] = "application/json"})
+end
+
+function checkUpdate()
+  PerformHttpRequest(apiURL..'version/'..serverHash, function(errorCode, resultData, resultHeaders) 
+      if resultData ~= version then
+          print("[FS-NUSANTARA] New Version Available, Please update......")
+      else
+          print("[FS-NUSANTARA] System is up to date")
+      end
+  end, "GET", json.encode(), {["Content-Type"] = "application/json"})
 end
 
 function getBanData()
@@ -47,14 +60,24 @@ function countBanData()
             count = count + 1
         end
         print("[FS-NUSANTARA] Ban data count: "..count)
+        checkUpdate()
     end
+end
+
+function discordNotify(name, steam, license, ip, hwid, discord)
+  local msg = {["color"] = "10552316", ["type"] = "rich", ["title"] = "Kicked blacklisted player", ["description"] =  "**Name : **" ..name .. "\n **Reason : **" .."[FS-NUSANTARA] Blacklisted Player".. "\n **IP : **||" ..ip.. "||\n **Steam : **||" .. steam .. "||\n **HWID: **||" ..hwid.. "||\n **Rockstar License : **||" .. license .. "||\n **Discord : **<@" .. discord .. ">", ["footer"] = { ["text"] = " © FS-NUSANTARA | "..os.date("%c").."" }}
+    
+  if name ~= "Unknown" then
+    PerformHttpRequest(discordWebHook, function(err, text, headers) end, "POST", json.encode({username = "FS-NUSANTARA", embeds = {msg}}), {["Content-Type"] = "application/json"})
+  end
+
 end
 
 AddEventHandler('playerConnecting', function (playerName,setKickReason)
     local license       = nil
     local playerip      = nil
     local playerdiscord = nil
-    local hwid        = nil
+    local hwid        = GetPlayerToken(source, 0)
     local steam       = nil
     local name  = GetPlayerName(source)
     
@@ -67,8 +90,6 @@ AddEventHandler('playerConnecting', function (playerName,setKickReason)
         playerip = v
       elseif string.sub(v, 1, string.len("discord:")) == "discord:" then
         playerdiscord = v
-      elseif string.sub(v, 1, string.len("hwid:")) == "hwid:" then
-        hwid = v
       end
     end
     
@@ -94,22 +115,27 @@ AddEventHandler('playerConnecting', function (playerName,setKickReason)
      
     for i = 1, #ListBan, 1 do
       if not((tostring(ListBan[i].license)) == "Not found" ) and (tostring(ListBan[i].license)) == tostring(license) then
+        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
         setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].xbl)) == "Not found") and (tostring(ListBan[i].steam)) == tostring(steam) then
+        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
         setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].ip)) == "Not found") and (tostring(ListBan[i].ip))  == tostring(playerip) then
+        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
         setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].discord)) == "Not found") and (tostring(ListBan[i].discord)) == tostring(playerdiscord) then
+        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
         setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
-      if not((tostring(ListBan[i].hwid)) == "Not found" ) and (tostring(ListBan[i].hwid))  == tostring(hwid) then 
+      if not((tostring(ListBan[i].hwid)) == "Not found" ) and (tostring(ListBan[i].hwid))  == tostring(hwid) then
+        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
         setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end 
