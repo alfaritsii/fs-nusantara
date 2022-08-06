@@ -1,22 +1,24 @@
 local serverHash = "nDmGMyrlxK" --Key untuk akses API
 local apiURL = "https://a11-4316-03.herokuapp.com/"
-local version = "100"
+local version = "101"
 local discordWebHook = ""
 
 
 AddEventHandler('onResourceStart', function(resourceName)
-    print("[FS-NUSANTARA] Test connect to API...")
-    checkAPI()
+    if resourceName == "fs-nusantara" then
+        print("[FS-^1NUSA^7NTARA] Test connect to API...")
+        checkAPI()
+    end
 end)
 
 function checkAPI()
     PerformHttpRequest(apiURL..'test/'..serverHash, function(errorCode, resultData, resultHeaders) 
-        print("[FS-NUSANTARA] API test result: "..resultData)
+        print("[FS-^1NUSA^7NTARA] API test result: "..resultData)
         if resultData == "200" then
-            print("[FS-NUSANTARA] Connected to API")
+            print("[FS-^1NUSA^7NTARA] Connected to API")
             getBanData()
         else
-            print("[FS-NUSANTARA] Error connecting to API")
+            print("[FS-^1NUSA^7NTARA] Error connecting to API")
         end
     end, "GET", json.encode(), {["Content-Type"] = "application/json"})
 end
@@ -24,9 +26,9 @@ end
 function checkUpdate()
   PerformHttpRequest(apiURL..'version/'..serverHash, function(errorCode, resultData, resultHeaders) 
       if resultData ~= version then
-          print("[FS-NUSANTARA] New Version Available, Please update......")
+          print("[FS-^1NUSA^7NTARA] New Version Available, Please update......")
       else
-          print("[FS-NUSANTARA] System is up to date")
+          print("[FS-^1NUSA^7NTARA] System is up to date")
       end
   end, "GET", json.encode(), {["Content-Type"] = "application/json"})
 end
@@ -35,7 +37,7 @@ function getBanData()
     ListBan = {}
     ResultJson = {}
     PerformHttpRequest(apiURL..'getall/'..serverHash, function(errorCode, resultData, resultHeaders)
-        print("[FS-NUSANTARA] Loading ban data...")
+        print("[FS-^1NUSA^7NTARA] Loading ban data...")
         ResultJson = json.decode(resultData)
         for i=1, #ResultJson["data"], 1 do
             table.insert(ListBan, {
@@ -59,13 +61,13 @@ function countBanData()
         for k,v in pairs(ListBan) do
             count = count + 1
         end
-        print("[FS-NUSANTARA] Ban data count: "..count)
+        print("[FS-^1NUSA^7NTARA] Ban data count: "..count)
         checkUpdate()
     end
 end
 
 function discordNotify(name, steam, license, ip, hwid, discord)
-  local msg = {["color"] = "10552316", ["type"] = "rich", ["title"] = "Kicked blacklisted player", ["description"] =  "**Name : **" ..name .. "\n **Reason : **" .."[FS-NUSANTARA] Blacklisted Player".. "\n **IP : **||" ..ip.. "||\n **Steam : **||" .. steam .. "||\n **HWID: **||" ..hwid.. "||\n **Rockstar License : **||" .. license .. "||\n **Discord : **<@" .. discord .. ">", ["footer"] = { ["text"] = " © FS-NUSANTARA | "..os.date("%c").."" }}
+  local msg = {["color"] = "10552316", ["type"] = "rich", ["title"] = "Kicked blacklisted player", ["description"] =  "**Name : **" ..name .. "\n **Reason : **" .."[FS-^1NUSA^7NTARA] Blacklisted Player".. "\n **IP : **||" ..ip.. "||\n **Steam : **||" .. steam .. "||\n **HWID: **||" ..hwid.. "||\n **Rockstar License : **||" .. license .. "||\n **Discord : **<@" .. discord .. ">", ["footer"] = { ["text"] = " © FS-NUSANTARA | "..os.date("%c").."" }}
     
   if name ~= "Unknown" then
     PerformHttpRequest(discordWebHook, function(err, text, headers) end, "POST", json.encode({username = "FS-NUSANTARA", embeds = {msg}}), {["Content-Type"] = "application/json"})
@@ -116,27 +118,27 @@ AddEventHandler('playerConnecting', function (playerName,setKickReason)
     for i = 1, #ListBan, 1 do
       if not((tostring(ListBan[i].license)) == "Not found" ) and (tostring(ListBan[i].license)) == tostring(license) then
         discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+        setKickReason('[FS-^1NUSA^7NTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].xbl)) == "Not found") and (tostring(ListBan[i].steam)) == tostring(steam) then
         discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+        setKickReason('[FS-^1NUSA^7NTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].ip)) == "Not found") and (tostring(ListBan[i].ip))  == tostring(playerip) then
         discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+        setKickReason('[FS-^1NUSA^7NTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].discord)) == "Not found") and (tostring(ListBan[i].discord)) == tostring(playerdiscord) then
         discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+        setKickReason('[FS-^1NUSA^7NTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end
       if not((tostring(ListBan[i].hwid)) == "Not found" ) and (tostring(ListBan[i].hwid))  == tostring(hwid) then
         discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+        setKickReason('[FS-^1NUSA^7NTARA] Anda kena blacklist (Global)')
         CancelEvent()
       end 
     end
