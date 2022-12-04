@@ -1,3 +1,9 @@
+## New Update (04 Desember 2022)
+- Database 145 Ban Data
+- Merubah api untuk get ban data dari API Server ke data json (online)
+- Fix beberapa error script jika gagal load ban data
+- Menghapus license system untuk get ban data
+
 ## New Update (08 Oktober 2022)
 - Menambahkan command pada console untuk reload ban data menggunakan command "nusantara reload"
 - Improvement
