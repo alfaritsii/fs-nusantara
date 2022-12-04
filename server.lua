@@ -1,8 +1,7 @@
-local serverHash = "nDmGMyrlxK" --Key untuk akses API
-local apiURL = "https://a11-4316-03.herokuapp.com/"
-local version = "102"
+local apiURL = "https://raw.githubusercontent.com/alfaritsii/fs-nusantara-db/main/data.json"
+local version = 104
 local discordWebHook = "" --Webhook discord untuk notifikasi jika ada player yang terbanned berusaha masuk
-
+local isDataLoaded = false --Jangan diubah
 -- // Jika Script Start Check Apakah API Server Online // --
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName == "fs-nusantara" then
@@ -13,22 +12,23 @@ end)
 
 -- // Check API Server Jika Online Maka Akan Mengambil Data Banned Dari Server API // --
 function checkAPI()
-    PerformHttpRequest(apiURL..'test/'..serverHash, function(errorCode, resultData, resultHeaders) 
-        print("[FS-^1NUSA^7NTARA] API test result: "..resultData)
-        if resultData == "200" then
+    PerformHttpRequest(apiURL, function(errorCode, resultData, resultHeaders) 
+        if resultData == nil then
+            print("[FS-^1NUSA^7NTARA] API Server is offline, please contact the developer FutureSeeker#1650 (discord) or use command nusantara reload")
+        else
             print("[FS-^1NUSA^7NTARA] Connected to API")
             Wait(5000)
             getBanData()
-        else
-            print("[FS-^1NUSA^7NTARA] Error connecting to API")
         end
     end, "GET", json.encode(), {["Content-Type"] = "application/json"})
 end
 
 -- // Check Apakah Update Telah Tersedia // --
 function checkUpdate()
-  PerformHttpRequest(apiURL..'version/'..serverHash, function(errorCode, resultData, resultHeaders) 
-      if resultData ~= version then
+  local ResultJson
+  PerformHttpRequest("https://raw.githubusercontent.com/alfaritsii/fs-nusantara-db/main/version.json", function(errorCode, resultData, resultHeaders) 
+      ResultJson = json.decode(resultData)
+      if ResultJson["version"] ~= version then
           print("[FS-^1NUSA^7NTARA] New Version Available, Please update...")
       else
           print("[FS-^1NUSA^7NTARA] System is up to date")
@@ -42,7 +42,7 @@ function getBanData()
     ListBan = {}
     ResultJson = {}
     -- // Mengambil Data Pada Server API // --
-    PerformHttpRequest(apiURL..'getall/'..serverHash, function(errorCode, resultData, resultHeaders)
+    PerformHttpRequest(apiURL, function(errorCode, resultData, resultHeaders)
         print("[FS-^1NUSA^7NTARA] Loading ban data...")
         -- // Menyimpan Data Banned Secara Sementara Pada Server (Disimpan Sampai Script Restart/Stop) // --
         ResultJson = json.decode(resultData)
@@ -74,6 +74,7 @@ function countBanData()
             count = count + 1
         end
         print("[FS-^1NUSA^7NTARA] Ban data count: "..count)
+        isDataLoaded = true
         checkUpdate()
     end
 end
@@ -90,74 +91,76 @@ end
 
 -- // Event Handler Ketika Player Connect Ke Kota // --
 AddEventHandler('playerConnecting', function (playerName,setKickReason)
-    local license       = nil
-    local playerip      = nil
-    local playerdiscord = nil
-    local hwid        = GetPlayerToken(source, 0)
-    local steam       = nil
-    local name  = GetPlayerName(source)
+    if isDataLoaded == true then  
+      local license       = nil
+      local playerip      = nil
+      local playerdiscord = nil
+      local hwid        = GetPlayerToken(source, 0)
+      local steam       = nil
+      local name  = GetPlayerName(source)
 
-    -- // Check Apakah Player Yang Connect Terdata Di Banned Data // --
-    for k,v in pairs(GetPlayerIdentifiers(source))do   
-      if string.sub(v, 1, string.len("license:")) == "license:" then
-        license = v
-      elseif string.sub(v, 1, string.len("steam:")) == "steam:" then
-        steam  = v
-      elseif string.sub(v, 1, string.len("ip:")) == "ip:" then
-        playerip = v
-      elseif string.sub(v, 1, string.len("discord:")) == "discord:" then
-        playerdiscord = v
+      -- // Check Apakah Player Yang Connect Terdata Di Banned Data // --
+      for k,v in pairs(GetPlayerIdentifiers(source))do   
+        if string.sub(v, 1, string.len("license:")) == "license:" then
+          license = v
+        elseif string.sub(v, 1, string.len("steam:")) == "steam:" then
+          steam  = v
+        elseif string.sub(v, 1, string.len("ip:")) == "ip:" then
+          playerip = v
+        elseif string.sub(v, 1, string.len("discord:")) == "discord:" then
+          playerdiscord = v
+        end
       end
-    end
-    
-    if playerip == nil then
-      playerip = GetPlayerEndpoint(source)
+      
       if playerip == nil then
-        playerip = 'Not found'
+        playerip = GetPlayerEndpoint(source)
+        if playerip == nil then
+          playerip = 'Not found'
+        end
+      end
+      if playerdiscord == nil then
+        playerdiscord = 'Not found'
+      end
+      if steam == nil then
+        steam = 'Not found'
+      end
+      if hwid == nil then
+          hwid = 'Not found'
+      end
+      
+      if (ListBan == {}) then
+        Citizen.Wait(1000)
+      end
+      
+      for i = 1, #ListBan, 1 do
+        if not((tostring(ListBan[i].license)) == "Not found" ) and (tostring(ListBan[i].license)) == tostring(license) then
+          discordNotify(name, steam, license, playerip, hwid, playerdiscord)
+          setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+          CancelEvent()
+        end
+        if not((tostring(ListBan[i].xbl)) == "Not found") and (tostring(ListBan[i].steam)) == tostring(steam) then
+          discordNotify(name, steam, license, playerip, hwid, playerdiscord)
+          setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+          CancelEvent()
+        end
+        if not((tostring(ListBan[i].ip)) == "Not found") and (tostring(ListBan[i].ip))  == tostring(playerip) then
+          discordNotify(name, steam, license, playerip, hwid, playerdiscord)
+          setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+          CancelEvent()
+        end
+        if not((tostring(ListBan[i].discord)) == "Not found") and (tostring(ListBan[i].discord)) == tostring(playerdiscord) then
+          discordNotify(name, steam, license, playerip, hwid, playerdiscord)
+          setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global))')
+          CancelEvent()
+        end
+        if not((tostring(ListBan[i].hwid)) == "Not found" ) and (tostring(ListBan[i].hwid))  == tostring(hwid) then
+          discordNotify(name, steam, license, playerip, hwid, playerdiscord)
+          setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
+          CancelEvent()
+        end 
       end
     end
-    if playerdiscord == nil then
-      playerdiscord = 'Not found'
-    end
-    if steam == nil then
-      steam = 'Not found'
-    end
-    if hwid == nil then
-        hwid = 'Not found'
-    end
-    
-    if (ListBan == {}) then
-      Citizen.Wait(1000)
-    end
-     
-    for i = 1, #ListBan, 1 do
-      if not((tostring(ListBan[i].license)) == "Not found" ) and (tostring(ListBan[i].license)) == tostring(license) then
-        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
-        CancelEvent()
-      end
-      if not((tostring(ListBan[i].xbl)) == "Not found") and (tostring(ListBan[i].steam)) == tostring(steam) then
-        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
-        CancelEvent()
-      end
-      if not((tostring(ListBan[i].ip)) == "Not found") and (tostring(ListBan[i].ip))  == tostring(playerip) then
-        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
-        CancelEvent()
-      end
-      if not((tostring(ListBan[i].discord)) == "Not found") and (tostring(ListBan[i].discord)) == tostring(playerdiscord) then
-        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global))')
-        CancelEvent()
-      end
-      if not((tostring(ListBan[i].hwid)) == "Not found" ) and (tostring(ListBan[i].hwid))  == tostring(hwid) then
-        discordNotify(name, steam, license, playerip, hwid, playerdiscord)
-        setKickReason('[FS-NUSANTARA] Anda kena blacklist (Global)')
-        CancelEvent()
-      end 
-    end
-  end)
+end)
 
 -- // Server Side Command Untuk Reload Ban Data (gunakan di txAdmin Console) // --
 RegisterCommand("nusantara", function(source, args, rawCommand)
@@ -171,8 +174,8 @@ RegisterCommand("nusantara", function(source, args, rawCommand)
   else
     if args[1] == "reload" then
       print("[FS-^1NUSA^7NTARA] Reload Ban Data Command Executed...")
-      PerformHttpRequest(apiURL..'test/'..serverHash, function(errorCode, resultData, resultHeaders) 
-        if resultData == "200" then
+      PerformHttpRequest(apiURL, function(errorCode, resultData, resultHeaders) 
+        if resultData ~= nil then
             getBanData()
         else
             print("[FS-^1NUSA^7NTARA] Error connecting to API")
