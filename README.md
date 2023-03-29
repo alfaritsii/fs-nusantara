@@ -1,5 +1,5 @@
 ## New Update (04 Desember 2022)
-- Database 145 Ban Data
+- Database 200+ (Always Update)
 - Merubah api untuk get ban data dari API Server ke data json (online)
 - Fix beberapa error script jika gagal load ban data
 - Menghapus license system untuk get ban data
